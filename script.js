@@ -83,32 +83,36 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function initializeApplication() {
     try {
-        // Set current year in footer
-        document.getElementById('current-year').textContent = new Date().getFullYear();
-        
         // Check if city is selected
         selectedCity = localStorage.getItem(SYSTEM_CONFIG.storageKeys.selectedCity);
         
         if (!selectedCity) {
-            // Show city selection by default
             showCitySelection();
-            console.log('🏢 No city selected - showing city selection screen');
             return;
         }
         
-        // City is already selected, load application
+        // Load data from localStorage or use defaults
         loadApplicationData();
+        
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Initialize event listeners
         setupEventListeners();
+        
+        // Populate city filter dropdown
         populateCityFilter();
+        
+        // Initialize saved users for auto-complete
         initializeSavedUsers();
+        
+        // Show main application
         showMainApplication();
         
         console.log('✅ Application initialized successfully for city:', selectedCity);
     } catch (error) {
         console.error('❌ Error initializing application:', error);
         showAlert('حدث خطأ في تحميل النظام', 'error');
-        // Fallback to city selection
-        showCitySelection();
     }
 }
 
@@ -120,35 +124,25 @@ function initializeApplication() {
  * Show city selection screen
  */
 function showCitySelection() {
-    const cityScreen = document.getElementById('city-selection-screen');
-    const mainApp = document.getElementById('main-application');
-    
-    if (cityScreen && mainApp) {
-        cityScreen.style.display = 'flex';
-        mainApp.style.display = 'none';
-        console.log('🏢 Showing city selection screen');
-    }
+    document.getElementById('city-selection-screen').style.display = 'flex';
+    document.getElementById('main-application').style.display = 'none';
+    console.log('🏢 Showing city selection screen');
 }
 
 /**
  * Show main application
  */
 function showMainApplication() {
-    const cityScreen = document.getElementById('city-selection-screen');
-    const mainApp = document.getElementById('main-application');
+    document.getElementById('city-selection-screen').style.display = 'none';
+    document.getElementById('main-application').style.display = 'flex';
     
-    if (cityScreen && mainApp) {
-        cityScreen.style.display = 'none';
-        mainApp.style.display = 'flex';
-        
-        // Update selected city display
-        const cityDisplay = document.getElementById('selected-city-display');
-        if (cityDisplay && selectedCity) {
-            cityDisplay.textContent = `الفرع المحدد: ${selectedCity}`;
-        }
-        
-        console.log('🏠 Showing main application for city:', selectedCity);
+    // Update selected city display
+    const cityDisplay = document.getElementById('selected-city-display');
+    if (cityDisplay) {
+        cityDisplay.textContent = `الفرع المحدد: ${selectedCity}`;
     }
+    
+    console.log('🏠 Showing main application');
 }
 
 /**
@@ -159,23 +153,33 @@ function selectCity(city) {
     showLoading(true);
     
     try {
-        console.log('🏢 City selection initiated:', city);
-        
         // Store selected city
         selectedCity = city;
         localStorage.setItem(SYSTEM_CONFIG.storageKeys.selectedCity, city);
         
-        // Initialize application for selected city
+        // Load application data
+        loadApplicationData();
+        
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Initialize event listeners
+        setupEventListeners();
+        
+        // Populate city filter dropdown
+        populateCityFilter();
+        
+        // Initialize saved users for auto-complete
+        initializeSavedUsers();
+        
+        // Show main application after delay
         setTimeout(() => {
-            loadApplicationData();
-            setupEventListeners();
-            populateCityFilter();
-            initializeSavedUsers();
             showMainApplication();
             showLoading(false);
             showAlert(`تم اختيار فرع ${city} بنجاح`);
-            console.log('✅ City selected and application loaded:', city);
-        }, 800);
+        }, 500);
+        
+        console.log('🏢 City selected:', city);
         
     } catch (error) {
         console.error('❌ Error selecting city:', error);
