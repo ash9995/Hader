@@ -1,35 +1,27 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- Meta Tags -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="نظام إدارة الحضور الذكي للمتطوعين والمتدربين">
     <title>حــاضـر| Hader </title>
     
-    <!-- External Stylesheets -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="website icon" href="websiteicon.jpg">
+    <link rel="website icon" href="img/websiteicon.ico">
     
-    <!-- Custom Stylesheets -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Background Overlay -->
     <div class="background-overlay"></div>
     
-    <!-- Main Container -->
     <div class="container">
-        <!-- Welcome Screen -->
         <div class="welcome-screen">
-            <!-- Logo Section -->
             <div class="logo-container">
-                <img src="Logo.jpg" alt="Smart Attendance Logo" class="logo-image">
+                <img src="img/Logo.jpg" alt="Smart Attendance Logo" class="logo-image">
                 <h1 id="welcome-title">حــاضـر</h1>
                 <p class="welcome-subtitle">نظام متقدم لإدارة الحضور والانصراف</p>
             </div>
             
-            <!-- Action Buttons -->
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="showForm('checkin')">
                     <i class="fas fa-sign-in-alt"></i> تسجيل حضور
@@ -37,22 +29,19 @@
                 <button class="btn btn-secondary" onclick="showForm('checkout')">
                     <i class="fas fa-sign-out-alt"></i> تسجيل خروج
                 </button>
-                <button class="btn btn-admin" onclick="showAdmin()">
+                <button class="btn btn-admin" onclick="showForm('admin-login')">
                     <i class="fas fa-chart-bar"></i> لوحة التحكم
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Check-in Form Overlay -->
     <div class="form-overlay" id="checkin-overlay">
         <div class="form-container">
-            <!-- Close Button -->
             <button class="form-close" onclick="hideForm('checkin')">
                 <i class="fas fa-times"></i>
             </button>
             
-            <!-- Form Header -->
             <h2 class="form-title">تسجيل حضور</h2>
             <div class="avatar-container">
                 <div class="avatar">
@@ -60,9 +49,7 @@
                 </div>
             </div>
             
-            <!-- Check-in Form -->
             <form id="checkin-form">
-                <!-- User Type Selection -->
                 <div class="form-group">
                     <label for="user-type">النوع</label>
                     <select id="user-type" required>
@@ -73,27 +60,23 @@
                     </select>
                 </div>
                 
-                <!-- Name Field with Auto-complete -->
                 <div class="form-group">
                     <label for="checkin-name">الاسم الكامل</label>
                     <input type="text" id="checkin-name" required placeholder="الاسم الثلاثي" list="name-suggestions">
                     <datalist id="name-suggestions"></datalist>
                 </div>
                 
-                <!-- Phone Field with Auto-complete -->
                 <div class="form-group">
                     <label for="checkin-phone">رقم الجوال</label>
                     <input type="tel" id="checkin-phone" required placeholder="05XXXXXXXX" list="phone-suggestions">
                     <datalist id="phone-suggestions"></datalist>
                 </div>
                 
-                <!-- Opportunity Type (Only for Volunteers) -->
                 <div class="form-group" id="opportunity-type-container" style="display: none;">
                     <label for="opportunity-type">نوع الفرصة التطوعية</label>
                     <input type="text" id="opportunity-type" placeholder="نوع الفرصة">
                 </div>
                 
-                <!-- Submit Button -->
                 <button type="submit" class="btn btn-submit">
                     <i class="fas fa-check-circle"></i> تأكيد الحضور
                 </button>
@@ -101,15 +84,12 @@
         </div>
     </div>
 
-    <!-- Check-out Form Overlay -->
     <div class="form-overlay" id="checkout-overlay">
         <div class="form-container">
-            <!-- Close Button -->
             <button class="form-close" onclick="hideForm('checkout')">
                 <i class="fas fa-times"></i>
             </button>
             
-            <!-- Form Header -->
             <h2 class="form-title">تسجيل خروج</h2>
             <div class="avatar-container">
                 <div class="avatar">
@@ -117,7 +97,6 @@
                 </div>
             </div>
             
-            <!-- Check-out Form -->
             <form id="checkout-form">
                 <div class="form-group">
                     <label for="checkout-phone">رقم الجوال</label>
@@ -132,10 +111,37 @@
         </div>
     </div>
 
-    <!-- Admin Panel Overlay -->
+    <div class="form-overlay" id="admin-login-overlay">
+        <div class="form-container">
+            <button class="form-close" onclick="hideForm('admin-login')">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2 class="form-title">تسجيل دخول المسؤول</h2>
+            <div class="avatar-container">
+                <div class="avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+            </div>
+            
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-username">اسم المستخدم</label>
+                    <input type="text" id="admin-username" required placeholder="ادخل اسم المستخدم">
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">كلمة المرور</label>
+                    <input type="password" id="admin-password" required placeholder="ادخل كلمة المرور">
+                </div>
+                <button type="submit" class="btn btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> دخول
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div class="admin-overlay" id="admin-overlay">
         <div class="admin-container">
-            <!-- Admin Header -->
             <div class="admin-header">
                 <h2 class="admin-title">لوحة التحكم</h2>
                 <button class="admin-close" onclick="hideAdmin()">
@@ -143,9 +149,7 @@
                 </button>
             </div>
 
-            <!-- KPI Cards Section -->
             <div class="kpi-container">
-                <!-- Volunteers KPI -->
                 <div class="kpi-card volunteers">
                     <div class="kpi-icon volunteers">
                         <i class="fas fa-hands-helping"></i>
@@ -157,7 +161,6 @@
                     </div>
                 </div>
                 
-                <!-- Trainees KPI -->
                 <div class="kpi-card trainees">
                     <div class="kpi-icon trainees">
                         <i class="fas fa-graduation-cap"></i>
@@ -169,7 +172,6 @@
                     </div>
                 </div>
                 
-                <!-- Preparatory KPI -->
                 <div class="kpi-card preparatory">
                     <div class="kpi-icon preparatory">
                         <i class="fas fa-user-graduate"></i>
@@ -181,7 +183,6 @@
                     </div>
                 </div>
                 
-                <!-- Total Attendance KPI -->
                 <div class="kpi-card total">
                     <div class="kpi-icon total">
                         <i class="fas fa-users"></i>
@@ -194,11 +195,9 @@
                 </div>
             </div>
 
-            <!-- Detailed Category KPIs -->
             <div id="category-kpis" class="category-kpis-container">
                 <h3 class="section-title">التحليل التفصيلي حسب الفئات</h3>
                 <div class="category-charts-grid">
-                    <!-- Volunteers Chart -->
                     <div class="category-chart-card volunteers">
                         <div class="chart-header">
                             <h4><i class="fas fa-hands-helping"></i> المتطوعين</h4>
@@ -221,7 +220,6 @@
                         </div>
                     </div>
 
-                    <!-- Trainees Chart -->
                     <div class="category-chart-card trainees">
                         <div class="chart-header">
                             <h4><i class="fas fa-graduation-cap"></i> المتدربين</h4>
@@ -244,7 +242,6 @@
                         </div>
                     </div>
 
-                    <!-- Preparatory Chart -->
                     <div class="category-chart-card preparatory">
                         <div class="chart-header">
                             <h4><i class="fas fa-user-graduate"></i> التمهير</h4>
@@ -269,10 +266,8 @@
                 </div>
             </div>
 
-            <!-- Controls Section -->
             <div class="controls-section">
                 <div class="controls-grid">
-                    <!-- City Filter -->
                     <div class="control-group">
                         <label for="city-filter">الفرع</label>
                         <select id="city-filter">
@@ -280,7 +275,6 @@
                         </select>
                     </div>
                     
-                    <!-- Period Filter -->
                     <div class="control-group">
                         <label for="period-filter">الفترة الزمنية</label>
                         <select id="period-filter">
@@ -294,7 +288,6 @@
                         </select>
                     </div>
                     
-                    <!-- Export Category Filter -->
                     <div class="control-group">
                         <label for="category-filter">فئة التصدير</label>
                         <select id="category-filter">
@@ -305,7 +298,6 @@
                         </select>
                     </div>
                     
-                    <!-- Custom Date Range -->
                     <div class="control-group" id="custom-date-range" style="display: none;">
                         <label for="date-from">من تاريخ</label>
                         <input type="date" id="date-from">
@@ -314,7 +306,6 @@
                     </div>
                 </div>
                 
-                <!-- Action Buttons -->
                 <div class="actions-grid">
                     <button class="btn btn-export" onclick="exportToExcel()">
                         <i class="fas fa-file-excel"></i> تصدير البيانات Excel
@@ -331,7 +322,6 @@
                 </div>
             </div>
 
-            <!-- Table Section -->
             <div class="table-section">
                 <div class="table-header">
                     <h3>سجلات الحضور والانصراف</h3>
@@ -358,15 +348,12 @@
         </div>
     </div>
 
-    <!-- Alert Notification -->
     <div class="alert" id="alert-message"></div>
 
-    <!-- Loading Spinner -->
     <div class="loading-spinner" id="loading-spinner">
         <div class="spinner"></div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <p class="copyright">جميع الحقوق محفوظة© <span id="current-year"></span>  |   حــــاضــر  </p>
@@ -374,7 +361,6 @@
         </div>
     </footer>
 
-    <!-- JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
