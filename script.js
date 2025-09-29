@@ -2,10 +2,6 @@
    SMART ATTENDANCE SYSTEM - JAVASCRIPT
    =============================================== */
 
-/* ===============================================
-   SYSTEM CONFIGURATION & CONSTANTS
-   =============================================== */
-
 const SYSTEM_CONFIG = {
     cities: [ 'الدمام', 'الرياض', 'جيزان', 'نجران', 'حايل', 'احد رفيده', 'بريدة', 'سكاكا' ],
     adminCredentials: { username: 'admin', password: 'admin123456' },
@@ -17,20 +13,10 @@ const SYSTEM_CONFIG = {
     storageKeys: { attendanceData: 'attendanceData', savedUsers: 'savedUsers', selectedCity: 'selectedCity' }
 };
 
-// --- FONT FOR PDF EXPORT (DO NOT MODIFY) ---
-// This large string is the Amiri font file, encoded to support Arabic characters in PDFs.
-const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (a very large string of font data will be here; the full version is in the final code)';
-
-/* ===============================================
-   GLOBAL VARIABLES
-   =============================================== */
 let attendanceData = [];
 let savedUsers = {};
 let selectedCity = null;
 
-/* ===============================================
-   APPLICATION INITIALIZATION
-   =============================================== */
 document.addEventListener('DOMContentLoaded', initializeApplication);
 
 function initializeApplication() {
@@ -52,9 +38,6 @@ function initializeApplication() {
     }
 }
 
-/* ===============================================
-   DATA MANAGEMENT
-   =============================================== */
 function loadApplicationData() {
     try {
         const storedData = localStorage.getItem(SYSTEM_CONFIG.storageKeys.attendanceData);
@@ -92,9 +75,6 @@ function saveApplicationData() {
     }
 }
 
-/* ===============================================
-   EVENT LISTENERS SETUP
-   =============================================== */
 function setupEventListeners() {
     document.getElementById('user-type')?.addEventListener('change', handleUserTypeChange);
     document.getElementById('period-filter')?.addEventListener('change', handlePeriodFilterChange);
@@ -130,9 +110,6 @@ function handlePeriodFilterChange(event) {
     updateDashboard();
 }
 
-/* ===============================================
-   FORM MANAGEMENT FUNCTIONS
-   =============================================== */
 function showForm(formType) {
     const overlay = document.getElementById(formType + '-overlay');
     if (overlay) {
@@ -192,9 +169,6 @@ function hideAdmin() {
     }
 }
 
-/* ===============================================
-   AUTO-COMPLETE FUNCTIONALITY
-   =============================================== */
 function initializeSavedUsers() {
     if (!savedUsers['متدرب']) savedUsers['متدرب'] = [];
     if (!savedUsers['تمهير']) savedUsers['تمهير'] = [];
@@ -230,9 +204,6 @@ function clearAutoFilledData() {
     document.getElementById('checkin-phone').value = '';
 }
 
-/* ===============================================
-   CHECK-IN/CHECK-OUT PROCESSING
-   =============================================== */
 function handleCheckInSubmission(event) {
     event.preventDefault();
     showLoading(true);
@@ -283,6 +254,7 @@ function hasExistingCheckIn(phone) {
     return attendanceData.some(r => r.phone === phone && r.city === selectedCity && r.checkIn?.startsWith(today) && !r.checkOut);
 }
 
+
 function findActiveRecord(phone) {
     const today = new Date().toISOString().split('T')[0];
     return attendanceData.findIndex(r => r.phone === phone && r.city === selectedCity && r.checkIn?.startsWith(today) && !r.checkOut);
@@ -306,9 +278,6 @@ function createAttendanceRecord(formData) {
     return { id: (attendanceData.length ? Math.max(...attendanceData.map(r => r.id)) : 0) + 1, ...formData, checkIn: getCurrentDateTime(), checkOut: null };
 }
 
-/* ===============================================
-   ADMIN DASHBOARD FUNCTIONS
-   =============================================== */
 function updateDashboard() {
     const data = getFilteredAttendanceData();
     updateKPIs(data);
@@ -343,42 +312,39 @@ function updateKPIs(data) {
 }
 
 function updateDetailedKPIs(data) {
-    // Volunteers
     const volunteers = data.filter(r => r.type === 'متطوع');
     const volunteerHours = volunteers.reduce((sum, r) => sum + calculateDuration(r.checkIn, r.checkOut), 0);
     document.getElementById('volunteers-sessions').textContent = volunteers.length;
     document.getElementById('volunteers-hours').textContent = volunteerHours.toFixed(1);
     document.getElementById('volunteers-avg-session').textContent = (volunteers.length > 0 ? volunteerHours / volunteers.length : 0).toFixed(1);
 
-    // Trainees
     const trainees = data.filter(r => r.type === 'متدرب');
     const traineeDays = new Set(trainees.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
     document.getElementById('trainees-sessions').textContent = trainees.length;
     document.getElementById('trainees-total-days').textContent = traineeDays;
-    document.getElementById('trainees-completion').textContent = `0%`; // Placeholder
+    document.getElementById('trainees-completion').textContent = `0%`;
 
-    // Preparatory
     const preparatory = data.filter(r => r.type === 'تمهير');
     const preparatoryDays = new Set(preparatory.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
     document.getElementById('preparatory-sessions').textContent = preparatory.length;
     document.getElementById('preparatory-total-days').textContent = preparatoryDays;
-    document.getElementById('preparatory-completion').textContent = `0%`; // Placeholder
+    document.getElementById('preparatory-completion').textContent = `0%`;
 }
 
 function getFilteredAttendanceData() {
     let records = [...attendanceData];
     const city = document.getElementById('city-filter').value;
-    const exportCategory = document.getElementById('category-filter').value;
+    const category = document.getElementById('category-filter').value;
     const period = document.getElementById('period-filter').value;
 
     if (city !== 'all') records = records.filter(r => r.city === city);
-    if (exportCategory !== 'all') records = records.filter(r => r.type === exportCategory);
+    if (category !== 'all') records = records.filter(r => r.type === category);
 
     const now = new Date();
     let startDate, endDate = new Date(now);
     
     switch (period) {
-        case 'today': startDate = new Date(new Date().setHours(0, 0, 0, 0)); endDate = new Date(new Date().setHours(23, 59, 59, 999)); break;
+        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); break;
         case 'this-week': startDate = new Date(now.setDate(now.getDate() - now.getDay())); break;
         case 'this-month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
         case 'last-month': startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); endDate = new Date(now.getFullYear(), now.getMonth(), 0); break;
@@ -390,15 +356,11 @@ function getFilteredAttendanceData() {
             if (from && to) {
                 startDate = new Date(from);
                 endDate = new Date(to);
-                endDate.setHours(23, 59, 59, 999);
             } else { return records; }
             break;
-        default: startDate = null;
     }
-
     if (startDate) {
         records = records.filter(r => {
-            if (!r.checkIn) return false;
             const checkInDate = new Date(r.checkIn);
             return checkInDate >= startDate && checkInDate <= endDate;
         });
@@ -421,7 +383,8 @@ function updateAttendanceTable(data) {
             <td>${record.checkIn || 'N/A'}</td>
             <td>${record.checkOut || 'لم يتم الخروج'}</td>
             <td>${duration.toFixed(2)} ساعة</td>
-            <td>1</td> <td><button class="btn" onclick="deleteRecord(${record.id})"><i class="fas fa-trash"></i></button></td>
+            <td>1</td>
+            <td><button class="btn" onclick="deleteRecord(${record.id})"><i class="fas fa-trash"></i></button></td>
         `;
     });
 }
@@ -433,195 +396,6 @@ function populateCityFilter() {
     SYSTEM_CONFIG.cities.forEach(city => select.innerHTML += `<option value="${city}">${city}</option>`);
 }
 
-/* ===============================================
-   EXPORT FUNCTIONS
-   =============================================== */
-
-function exportToExcel() {
-    showLoading(true);
-    try {
-        const data = getFilteredAttendanceData();
-        const headers = ["الفرع", "الاسم", "رقم الجوال", "النوع", "وقت الدخول", "وقت الخروج", "المدة (ساعة)"];
-        const sheetData = data.map(row => ({
-            "الفرع": row.city,
-            "الاسم": row.name,
-            "رقم الجوال": row.phone,
-            "النوع": row.type,
-            "وقت الدخول": row.checkIn || "N/A",
-            "وقت الخروج": row.checkOut || "لم يتم الخروج",
-            "المدة (ساعة)": calculateDuration(row.checkIn, row.checkOut).toFixed(2)
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(sheetData, { header: headers });
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "سجلات الحضور");
-        XLSX.writeFile(workbook, "Hader_Attendance_Report.xlsx");
-        showAlert("تم تصدير البيانات إلى Excel بنجاح");
-    } catch (error) {
-        console.error("Excel export error:", error);
-        showAlert("فشل تصدير البيانات.", "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-function exportToPDF() {
-    showLoading(true);
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Add Arabic font and enable Right-to-Left
-        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-        doc.setFont('Amiri');
-        doc.setR2L(true);
-
-        const data = getFilteredAttendanceData();
-        const headers = [["الفرع", "الاسم", "رقم الجوال", "النوع", "وقت الدخول", "وقت الخروج", "المدة (ساعة)"]];
-        const body = data.map(row => [
-            row.city,
-            row.name,
-            row.phone,
-            row.type,
-            row.checkIn || "N/A",
-            row.checkOut || "لم يتم الخروج",
-            calculateDuration(row.checkIn, row.checkOut).toFixed(2)
-        ]);
-        
-        doc.setFontSize(16);
-        doc.text("تقرير الحضور والانصراف", 105, 15, { align: 'center' });
-
-        doc.autoTable({
-            head: headers,
-            body: body,
-            startY: 20,
-            styles: { font: "Amiri", halign: 'center' },
-            headStyles: { fillColor: [44, 62, 80], halign: 'center' },
-        });
-
-        doc.save("Hader_Attendance_Report.pdf");
-        showAlert("تم تصدير البيانات إلى PDF بنجاح");
-    } catch (error) {
-        console.error("PDF export error:", error);
-        showAlert("فشل تصدير البيانات.", "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-function getKpiDataAsObject() {
-    return {
-        volunteersCount: document.getElementById('volunteers-count').textContent,
-        volunteersAvg: document.getElementById('volunteers-avg').textContent,
-        traineesCount: document.getElementById('trainees-count').textContent,
-        traineesDays: document.getElementById('trainees-days').textContent,
-        preparatoryCount: document.getElementById('preparatory-count').textContent,
-        preparatoryDays: document.getElementById('preparatory-days').textContent,
-        totalCount: document.getElementById('total-count').textContent,
-        totalHours: document.getElementById('total-hours').textContent,
-
-        volunteersSessions: document.getElementById('volunteers-sessions').textContent,
-        volunteersHours: document.getElementById('volunteers-hours').textContent,
-        volunteersAvgSession: document.getElementById('volunteers-avg-session').textContent,
-
-        traineesSessions: document.getElementById('trainees-sessions').textContent,
-        traineesTotalDays: document.getElementById('trainees-total-days').textContent,
-        traineesCompletion: document.getElementById('trainees-completion').textContent,
-
-        preparatorySessions: document.getElementById('preparatory-sessions').textContent,
-        preparatoryTotalDays: document.getElementById('preparatory-total-days').textContent,
-        preparatoryCompletion: document.getElementById('preparatory-completion').textContent
-    };
-}
-
-
-function exportKPIToExcel() {
-    showLoading(true);
-    try {
-        const kpis = getKpiDataAsObject();
-        const data = [
-            ["المؤشر الرئيسي", "القيمة"],
-            ["عدد المتطوعين", kpis.volunteersCount],
-            [kpis.volunteersAvg, ""],
-            ["عدد المتدربين", kpis.traineesCount],
-            [kpis.traineesDays, ""],
-            ["عدد التمهير", kpis.preparatoryCount],
-            [kpis.preparatoryDays, ""],
-            ["إجمالي الحضور", kpis.totalCount],
-            [kpis.totalHours, ""],
-            [],
-            ["التحليل التفصيلي", "جلسات", "إجمالي", "النسبة/المتوسط"],
-            ["المتطوعين", kpis.volunteersSessions, `${kpis.volunteersHours} (ساعة)`, `${kpis.volunteersAvgSession} (متوسط الجلسة)`],
-            ["المتدربين", kpis.traineesSessions, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesCompletion],
-            ["التمهير", kpis.preparatorySessions, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatoryCompletion],
-        ];
-
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "ملخص التحليلات");
-        XLSX.writeFile(workbook, "Hader_Analytics_Report.xlsx");
-        showAlert("تم تصدير التحليلات إلى Excel بنجاح");
-    } catch (error) {
-        console.error("KPI Excel export error:", error);
-        showAlert("فشل تصدير التحليلات.", "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-function exportKPIToPDF() {
-    showLoading(true);
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const kpis = getKpiDataAsObject();
-
-        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-        doc.setFont('Amiri');
-        doc.setR2L(true); // Enable Right-to-Left text rendering
-
-        doc.setFontSize(16);
-        doc.text("تقرير التحليلات والمؤشرات", 105, 15, { align: 'center' });
-
-        doc.setFontSize(14);
-        doc.text("المؤشرات الرئيسية", 200, 30, { align: 'right' });
-        doc.setFontSize(11);
-        doc.text(`إجمالي الحضور: ${kpis.totalCount}  |  ${kpis.totalHours}`, 200, 40, { align: 'right' });
-        doc.text(`المتطوعين: ${kpis.volunteersCount}  |  ${kpis.volunteersAvg}`, 200, 48, { align: 'right' });
-        doc.text(`المتدربين: ${kpis.traineesCount}  |  ${kpis.traineesDays}`, 200, 56, { align: 'right' });
-        doc.text(`التمهير: ${kpis.preparatoryCount}  |  ${kpis.preparatoryDays}`, 200, 64, { align: 'right' });
-        
-        doc.setFontSize(14);
-        doc.text("التحليل التفصيلي حسب الفئات", 200, 80, { align: 'right' });
-
-        doc.autoTable({
-            head: [["الفئة", "الجلسات", "الإجمالي", "النسبة/المتوسط"]],
-            body: [
-                ["المتطوعين", kpis.volunteersSessions, `${kpis.volunteersHours} (ساعة)`, `${kpis.volunteersAvgSession} (متوسط الجلسة)`],
-                ["المتدربين", kpis.traineesSessions, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesCompletion],
-                ["التمهير", kpis.preparatorySessions, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatoryCompletion]
-            ],
-            startY: 85,
-            styles: { font: "Amiri", halign: 'center' },
-            headStyles: { fillColor: [44, 62, 80] },
-        });
-
-        doc.save("Hader_Analytics_Report.pdf");
-        showAlert("تم تصدير التحليلات إلى PDF بنجاح");
-    } catch (error) {
-        console.error("KPI PDF export error:", error);
-        showAlert("فشل تصدير التحليلات.", "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-
-/* ===============================================
-   HELPER FUNCTIONS & UTILITIES
-   =============================================== */
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alert-message');
     alertBox.textContent = message;
@@ -671,4 +445,501 @@ function setupKeyboardShortcuts() {
             if (activeAdmin) hideAdmin();
         }
     });
+}
+
+/* ===============================================
+   EXPORT FUNCTIONS
+   =============================================== */
+
+function exportToExcel() {
+    try {
+        const data = getFilteredAttendanceData();
+        if (data.length === 0) {
+            showAlert('لا توجد بيانات للتصدير', 'error');
+            return;
+        }
+
+        const excelData = data.map(record => ({
+            'الفرع': record.city,
+            'الاسم': record.name,
+            'رقم الجوال': record.phone,
+            'النوع': record.type,
+            'نوع الفرصة': record.opportunityType || '-',
+            'وقت الدخول': record.checkIn || '-',
+            'وقت الخروج': record.checkOut || 'لم يتم الخروج',
+            'المدة (ساعة)': calculateDuration(record.checkIn, record.checkOut).toFixed(2)
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData);
+
+        ws['!cols'] = [
+            { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 },
+            { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 12 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'سجلات الحضور');
+        const filename = `سجلات_الحضور_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        showAlert('تم تصدير البيانات بنجاح');
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        showAlert('حدث خطأ أثناء تصدير البيانات', 'error');
+    }
+}
+
+function exportToPDF() {
+    try {
+        const data = getFilteredAttendanceData();
+        if (data.length === 0) {
+            showAlert('لا توجد بيانات للتصدير', 'error');
+            return;
+        }
+
+        showLoading(true);
+
+        // Create a temporary div to render the table
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.background = 'white';
+        tempDiv.style.padding = '20px';
+        tempDiv.style.width = '1200px';
+        tempDiv.style.fontFamily = 'Tajawal, Arial, sans-serif';
+        tempDiv.style.direction = 'rtl';
+        
+        // Create HTML table
+        let tableHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="font-size: 24px; color: #333;">سجلات الحضور والانصراف</h1>
+                <p style="font-size: 14px; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-SA')}</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;" dir="rtl">
+                <thead>
+                    <tr style="background-color: #546B68;">
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">الفرع</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">الاسم</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">رقم الجوال</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">النوع</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">وقت الدخول</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">وقت الخروج</th>
+                        <th style="border: 1px solid #ddd; padding: 10px; color: white;">المدة (ساعة)</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        data.forEach((record, index) => {
+            const bgColor = index % 2 === 0 ? '#f5f5f5' : 'white';
+            tableHTML += `
+                <tr style="background-color: ${bgColor};">
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.city}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${record.name}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.phone}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.type}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.checkIn || '-'}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${record.checkOut || 'لم يتم الخروج'}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${calculateDuration(record.checkIn, record.checkOut).toFixed(2)}</td>
+                </tr>`;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>`;
+
+        tempDiv.innerHTML = tableHTML;
+        document.body.appendChild(tempDiv);
+
+        // Convert to canvas then to PDF
+        html2canvas(tempDiv, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            
+            // Calculate dimensions
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const imgWidth = pageWidth - 20;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            let heightLeft = imgHeight;
+            let position = 10;
+
+            // Add image to PDF, handle pagination if needed
+            doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= (pageHeight - 20);
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
+                doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            // Save the PDF
+            const filename = `attendance_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            // Clean up
+            document.body.removeChild(tempDiv);
+            showLoading(false);
+            showAlert('تم تصدير البيانات بنجاح');
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            document.body.removeChild(tempDiv);
+            showLoading(false);
+            showAlert('حدث خطأ أثناء تصدير البيانات', 'error');
+        });
+
+    } catch (error) {
+        console.error('Error exporting to PDF:', error);
+        showLoading(false);
+        showAlert('حدث خطأ أثناء تصدير البيانات', 'error');
+    }
+}
+
+function exportKPIToExcel() {
+    try {
+        const data = getFilteredAttendanceData();
+        if (data.length === 0) {
+            showAlert('لا توجد بيانات للتصدير', 'error');
+            return;
+        }
+
+        // Calculate KPI metrics
+        const volunteers = data.filter(r => r.type === 'متطوع');
+        const trainees = data.filter(r => r.type === 'متدرب');
+        const preparatory = data.filter(r => r.type === 'تمهير');
+
+        const uniqueVolunteers = new Set(volunteers.map(r => r.phone)).size;
+        const uniqueTrainees = new Set(trainees.map(r => r.phone)).size;
+        const uniquePreparatory = new Set(preparatory.map(r => r.phone)).size;
+
+        const totalVolunteerHours = volunteers.reduce((sum, r) => sum + calculateDuration(r.checkIn, r.checkOut), 0);
+        const avgVolunteerHours = uniqueVolunteers > 0 ? totalVolunteerHours / uniqueVolunteers : 0;
+
+        const traineeDays = new Set(trainees.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
+        const avgTraineeDays = uniqueTrainees > 0 ? traineeDays / uniqueTrainees : 0;
+
+        const preparatoryDays = new Set(preparatory.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
+        const avgPreparatoryDays = uniquePreparatory > 0 ? preparatoryDays / uniquePreparatory : 0;
+
+        const totalHours = data.reduce((sum, r) => sum + calculateDuration(r.checkIn, r.checkOut), 0);
+        const totalUnique = uniqueVolunteers + uniqueTrainees + uniquePreparatory;
+
+        // Create Excel workbook with multiple sheets
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: Summary KPIs
+        const summaryData = [
+            { 'المؤشر': 'عدد المتطوعين', 'القيمة': uniqueVolunteers, 'الوحدة': 'شخص' },
+            { 'المؤشر': 'متوسط ساعات المتطوعين', 'القيمة': avgVolunteerHours.toFixed(1), 'الوحدة': 'ساعة' },
+            { 'المؤشر': 'إجمالي ساعات التطوع', 'القيمة': totalVolunteerHours.toFixed(1), 'الوحدة': 'ساعة' },
+            { 'المؤشر': '', 'القيمة': '', 'الوحدة': '' },
+            { 'المؤشر': 'عدد المتدربين', 'القيمة': uniqueTrainees, 'الوحدة': 'شخص' },
+            { 'المؤشر': 'متوسط أيام المتدربين', 'القيمة': avgTraineeDays.toFixed(1), 'الوحدة': 'يوم' },
+            { 'المؤشر': 'إجمالي أيام التدريب', 'القيمة': traineeDays, 'الوحدة': 'يوم' },
+            { 'المؤشر': '', 'القيمة': '', 'الوحدة': '' },
+            { 'المؤشر': 'عدد التمهير', 'القيمة': uniquePreparatory, 'الوحدة': 'شخص' },
+            { 'المؤشر': 'متوسط أيام التمهير', 'القيمة': avgPreparatoryDays.toFixed(1), 'الوحدة': 'يوم' },
+            { 'المؤشر': 'إجمالي أيام التمهير', 'القيمة': preparatoryDays, 'الوحدة': 'يوم' },
+            { 'المؤشر': '', 'القيمة': '', 'الوحدة': '' },
+            { 'المؤشر': 'إجمالي الحضور', 'القيمة': totalUnique, 'الوحدة': 'شخص' },
+            { 'المؤشر': 'إجمالي الساعات', 'القيمة': totalHours.toFixed(1), 'الوحدة': 'ساعة' }
+        ];
+
+        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+        summarySheet['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(wb, summarySheet, 'المؤشرات العامة');
+
+        // Sheet 2: Detailed Category Analysis
+        const categoryData = [
+            // Volunteers section
+            { 'الفئة': 'المتطوعين', 'المؤشر': 'عدد الجلسات', 'القيمة': volunteers.length },
+            { 'الفئة': 'المتطوعين', 'المؤشر': 'إجمالي الساعات', 'القيمة': totalVolunteerHours.toFixed(1) },
+            { 'الفئة': 'المتطوعين', 'المؤشر': 'متوسط الجلسة', 'القيمة': (volunteers.length > 0 ? totalVolunteerHours / volunteers.length : 0).toFixed(1) },
+            { 'الفئة': '', 'المؤشر': '', 'القيمة': '' },
+            // Trainees section
+            { 'الفئة': 'المتدربين', 'المؤشر': 'عدد الجلسات', 'القيمة': trainees.length },
+            { 'الفئة': 'المتدربين', 'المؤشر': 'إجمالي الأيام', 'القيمة': traineeDays },
+            { 'الفئة': 'المتدربين', 'المؤشر': 'نسبة الإنجاز', 'القيمة': '0%' },
+            { 'الفئة': '', 'المؤشر': '', 'القيمة': '' },
+            // Preparatory section
+            { 'الفئة': 'التمهير', 'المؤشر': 'عدد الجلسات', 'القيمة': preparatory.length },
+            { 'الفئة': 'التمهير', 'المؤشر': 'إجمالي الأيام', 'القيمة': preparatoryDays },
+            { 'الفئة': 'التمهير', 'المؤشر': 'نسبة الإنجاز', 'القيمة': '0%' }
+        ];
+
+        const categorySheet = XLSX.utils.json_to_sheet(categoryData);
+        categorySheet['!cols'] = [{ wch: 20 }, { wch: 25 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(wb, categorySheet, 'التحليل التفصيلي');
+
+        // Sheet 3: Individual Performance (Top performers)
+        const volunteerPerformance = [];
+        const volunteerStats = new Map();
+
+        volunteers.forEach(record => {
+            const phone = record.phone;
+            if (!volunteerStats.has(phone)) {
+                volunteerStats.set(phone, {
+                    name: record.name,
+                    phone: phone,
+                    sessions: 0,
+                    totalHours: 0
+                });
+            }
+            const stats = volunteerStats.get(phone);
+            stats.sessions++;
+            stats.totalHours += calculateDuration(record.checkIn, record.checkOut);
+        });
+
+        volunteerStats.forEach(stats => {
+            volunteerPerformance.push({
+                'الاسم': stats.name,
+                'رقم الجوال': stats.phone,
+                'عدد الجلسات': stats.sessions,
+                'إجمالي الساعات': stats.totalHours.toFixed(1),
+                'متوسط الجلسة': (stats.totalHours / stats.sessions).toFixed(1)
+            });
+        });
+
+        // Sort by total hours descending
+        volunteerPerformance.sort((a, b) => parseFloat(b['إجمالي الساعات']) - parseFloat(a['إجمالي الساعات']));
+
+        const performanceSheet = XLSX.utils.json_to_sheet(volunteerPerformance);
+        performanceSheet['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(wb, performanceSheet, 'أداء المتطوعين');
+
+        // Save the file
+        const filename = `تحليل_المؤشرات_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        showAlert('تم تصدير التحليلات بنجاح');
+
+    } catch (error) {
+        console.error('Error exporting KPI to Excel:', error);
+        showAlert('حدث خطأ أثناء تصدير التحليلات', 'error');
+    }
+}
+
+function exportKPIToPDF() {
+    try {
+        const data = getFilteredAttendanceData();
+        if (data.length === 0) {
+            showAlert('لا توجد بيانات للتصدير', 'error');
+            return;
+        }
+
+        showLoading(true);
+
+        // Calculate KPI metrics (same as Excel export)
+        const volunteers = data.filter(r => r.type === 'متطوع');
+        const trainees = data.filter(r => r.type === 'متدرب');
+        const preparatory = data.filter(r => r.type === 'تمهير');
+
+        const uniqueVolunteers = new Set(volunteers.map(r => r.phone)).size;
+        const uniqueTrainees = new Set(trainees.map(r => r.phone)).size;
+        const uniquePreparatory = new Set(preparatory.map(r => r.phone)).size;
+
+        const totalVolunteerHours = volunteers.reduce((sum, r) => sum + calculateDuration(r.checkIn, r.checkOut), 0);
+        const avgVolunteerHours = uniqueVolunteers > 0 ? totalVolunteerHours / uniqueVolunteers : 0;
+
+        const traineeDays = new Set(trainees.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
+        const preparatoryDays = new Set(preparatory.map(r => `${r.phone}-${new Date(r.checkIn).toISOString().split('T')[0]}`)).size;
+
+        // Create temporary div for PDF generation
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.background = 'white';
+        tempDiv.style.padding = '30px';
+        tempDiv.style.width = '1000px';
+        tempDiv.style.fontFamily = 'Tajawal, Arial, sans-serif';
+        tempDiv.style.direction = 'rtl';
+        
+        // Create comprehensive KPI report HTML
+        let reportHTML = `
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #96BCB7; padding-bottom: 20px;">
+                <h1 style="font-size: 28px; color: #333; margin-bottom: 10px;">تقرير تحليل المؤشرات</h1>
+                <h2 style="font-size: 20px; color: #96BCB7; margin-bottom: 5px;">نظام الحضور الذكي</h2>
+                <p style="font-size: 14px; color: #666;">التاريخ: ${new Date().toLocaleDateString('ar-SA')} | الوقت: ${new Date().toLocaleTimeString('ar-SA')}</p>
+            </div>
+
+            <!-- Main KPIs Section -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-right: 4px solid #96BCB7;">المؤشرات الرئيسية</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid #96BCB7;">
+                        <h4 style="color: #96BCB7; margin-bottom: 10px;">المتطوعين</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #333; margin: 5px 0;">${uniqueVolunteers}</p>
+                        <p style="color: #666; font-size: 12px;">متوسط الساعات: ${avgVolunteerHours.toFixed(1)}</p>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid #44556A;">
+                        <h4 style="color: #44556A; margin-bottom: 10px;">المتدربين</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #333; margin: 5px 0;">${uniqueTrainees}</p>
+                        <p style="color: #666; font-size: 12px;">إجمالي الأيام: ${traineeDays}</p>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid #E87853;">
+                        <h4 style="color: #E87853; margin-bottom: 10px;">التمهير</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #333; margin: 5px 0;">${uniquePreparatory}</p>
+                        <p style="color: #666; font-size: 12px;">إجمالي الأيام: ${preparatoryDays}</p>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid #546B68;">
+                        <h4 style="color: #546B68; margin-bottom: 10px;">الإجمالي</h4>
+                        <p style="font-size: 24px; font-weight: bold; color: #333; margin: 5px 0;">${uniqueVolunteers + uniqueTrainees + uniquePreparatory}</p>
+                        <p style="color: #666; font-size: 12px;">الساعات: ${totalVolunteerHours.toFixed(1)}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis Section -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-right: 4px solid #44556A;">التحليل التفصيلي</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #96BCB7; margin-bottom: 10px;">المتطوعين</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <tr style="background: #96BCB7; color: white;">
+                            <td style="padding: 8px; border: 1px solid #ddd;">عدد الجلسات</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">إجمالي الساعات</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">متوسط الجلسة</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${volunteers.length}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${totalVolunteerHours.toFixed(1)}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${(volunteers.length > 0 ? totalVolunteerHours / volunteers.length : 0).toFixed(1)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #44556A; margin-bottom: 10px;">المتدربين</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <tr style="background: #44556A; color: white;">
+                            <td style="padding: 8px; border: 1px solid #ddd;">عدد الجلسات</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">إجمالي الأيام</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">نسبة الإنجاز</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${trainees.length}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${traineeDays}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0%</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #E87853; margin-bottom: 10px;">التمهير</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <tr style="background: #E87853; color: white;">
+                            <td style="padding: 8px; border: 1px solid #ddd;">عدد الجلسات</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">إجمالي الأيام</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">نسبة الإنجاز</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${preparatory.length}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${preparatoryDays}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Summary Statistics Section -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-right: 4px solid #546B68;">إحصائيات عامة</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <tr style="background: #546B68; color: white;">
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">المؤشر</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">القيمة</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">الوحدة</td>
+                    </tr>
+                    <tr style="background: #f9f9f9;">
+                        <td style="padding: 8px; border: 1px solid #ddd;">إجمالي المشاركين</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${uniqueVolunteers + uniqueTrainees + uniquePreparatory}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">شخص</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">إجمالي ساعات التطوع</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${totalVolunteerHours.toFixed(1)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">ساعة</td>
+                    </tr>
+                    <tr style="background: #f9f9f9;">
+                        <td style="padding: 8px; border: 1px solid #ddd;">إجمالي أيام التدريب</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${traineeDays + preparatoryDays}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">يوم</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">متوسط المشاركة اليومية</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${((uniqueVolunteers + uniqueTrainees + uniquePreparatory) / Math.max(1, new Set(data.map(r => new Date(r.checkIn).toDateString())).size)).toFixed(1)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">شخص/يوم</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+                <p>تم إنشاء هذا التقرير بواسطة نظام الحضور الذكي</p>
+                <p style="margin-top: 5px;">جميع الحقوق محفوظة © ${new Date().getFullYear()}</p>
+            </div>
+        `;
+
+        tempDiv.innerHTML = reportHTML;
+        document.body.appendChild(tempDiv);
+
+        // Convert to canvas then to PDF
+        html2canvas(tempDiv, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4'); // Portrait orientation for KPI report
+            
+            // Calculate dimensions
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const imgWidth = pageWidth - 20;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            let heightLeft = imgHeight;
+            let position = 10;
+
+            // Add image to PDF, handle pagination if needed
+            doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= (pageHeight - 20);
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
+                doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            // Save the PDF
+            const filename = `تقرير_التحليلات_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            // Clean up
+            document.body.removeChild(tempDiv);
+            showLoading(false);
+            showAlert('تم تصدير تقرير التحليلات بنجاح');
+        }).catch(error => {
+            console.error('Error generating KPI PDF:', error);
+            document.body.removeChild(tempDiv);
+            showLoading(false);
+            showAlert('حدث خطأ أثناء تصدير تقرير التحليلات', 'error');
+        });
+
+    } catch (error) {
+        console.error('Error exporting KPI to PDF:', error);
+        showLoading(false);
+        showAlert('حدث خطأ أثناء تصدير تقرير التحليلات', 'error');
+    }
 }
