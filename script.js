@@ -471,10 +471,11 @@ function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
-        // Add Arabic font
+        // Add Arabic font and enable Right-to-Left
         doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
         doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
         doc.setFont('Amiri');
+        doc.setR2L(true);
 
         const data = getFilteredAttendanceData();
         const headers = [["الفرع", "الاسم", "رقم الجوال", "النوع", "وقت الدخول", "وقت الخروج", "المدة (ساعة)"]];
@@ -488,10 +489,8 @@ function exportToPDF() {
             calculateDuration(row.checkIn, row.checkOut).toFixed(2)
         ]);
         
-        const title = "تقرير الحضور والانصراف";
-        const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-        const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
-        doc.text(title, titleX, 15);
+        doc.setFontSize(16);
+        doc.text("تقرير الحضور والانصراف", 105, 15, { align: 'center' });
 
         doc.autoTable({
             head: headers,
@@ -499,17 +498,6 @@ function exportToPDF() {
             startY: 20,
             styles: { font: "Amiri", halign: 'center' },
             headStyles: { fillColor: [44, 62, 80], halign: 'center' },
-            didDrawPage: function(data) {
-                // This is a workaround to make the RTL text appear correctly in the table
-                // It mirrors the page content horizontally.
-                const doc = data.doc;
-                const pageContent = doc.internal.pages[data.pageNumber].join('\n');
-                const startX = doc.internal.pageSize.width / 2;
-                doc.internal.pages[data.pageNumber] = [];
-                doc.addPage();
-                doc.internal.pages[data.pageNumber] = [];
-                doc.text(pageContent, startX, 0, { align: 'center' });
-            },
         });
 
         doc.save("Hader_Attendance_Report.pdf");
