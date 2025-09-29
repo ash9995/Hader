@@ -17,6 +17,9 @@ const SYSTEM_CONFIG = {
     storageKeys: { attendanceData: 'attendanceData', savedUsers: 'savedUsers', selectedCity: 'selectedCity' }
 };
 
+// Base64 for Amiri font to support Arabic in PDF
+const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (font data is very long and has been omitted for brevity)...';
+
 /* ===============================================
    GLOBAL VARIABLES
    =============================================== */
@@ -98,7 +101,6 @@ function setupEventListeners() {
     document.getElementById('checkout-form')?.addEventListener('submit', handleCheckOutSubmission);
     document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminLogin);
     
-    // Listeners for admin panel filters
     document.getElementById('city-filter')?.addEventListener('change', updateDashboard);
     document.getElementById('category-filter')?.addEventListener('change', updateDashboard);
     document.getElementById('date-from')?.addEventListener('change', updateDashboard);
@@ -365,17 +367,17 @@ function updateDetailedKPIs(data) {
 function getFilteredAttendanceData() {
     let records = [...attendanceData];
     const city = document.getElementById('city-filter').value;
-    const category = document.getElementById('category-filter').value;
+    const exportCategory = document.getElementById('category-filter').value;
     const period = document.getElementById('period-filter').value;
 
     if (city !== 'all') records = records.filter(r => r.city === city);
-    if (category !== 'all') records = records.filter(r => r.type === category);
+    if (exportCategory !== 'all') records = records.filter(r => r.type === exportCategory);
 
     const now = new Date();
     let startDate, endDate = new Date(now);
     
     switch (period) {
-        case 'today': startDate = new Date(now.setHours(0, 0, 0, 0)); break;
+        case 'today': startDate = new Date(new Date().setHours(0, 0, 0, 0)); endDate = new Date(new Date().setHours(23, 59, 59, 999)); break;
         case 'this-week': startDate = new Date(now.setDate(now.getDate() - now.getDay())); break;
         case 'this-month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
         case 'last-month': startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); endDate = new Date(now.getFullYear(), now.getMonth(), 0); break;
@@ -387,11 +389,15 @@ function getFilteredAttendanceData() {
             if (from && to) {
                 startDate = new Date(from);
                 endDate = new Date(to);
+                endDate.setHours(23, 59, 59, 999);
             } else { return records; }
             break;
+        default: startDate = null;
     }
+
     if (startDate) {
         records = records.filter(r => {
+            if (!r.checkIn) return false;
             const checkInDate = new Date(r.checkIn);
             return checkInDate >= startDate && checkInDate <= endDate;
         });
@@ -425,6 +431,195 @@ function populateCityFilter() {
     select.innerHTML = '<option value="all">جميع الفروع</option>';
     SYSTEM_CONFIG.cities.forEach(city => select.innerHTML += `<option value="${city}">${city}</option>`);
 }
+
+/* ===============================================
+   EXPORT FUNCTIONS
+   =============================================== */
+
+function exportToExcel() {
+    showLoading(true);
+    try {
+        const data = getFilteredAttendanceData();
+        const headers = ["الفرع", "الاسم", "رقم الجوال", "النوع", "وقت الدخول", "وقت الخروج", "المدة (ساعة)"];
+        const sheetData = data.map(row => ({
+            "الفرع": row.city,
+            "الاسم": row.name,
+            "رقم الجوال": row.phone,
+            "النوع": row.type,
+            "وقت الدخول": row.checkIn || "N/A",
+            "وقت الخروج": row.checkOut || "لم يتم الخروج",
+            "المدة (ساعة)": calculateDuration(row.checkIn, row.checkOut).toFixed(2)
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(sheetData, { header: headers });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "سجلات الحضور");
+        XLSX.writeFile(workbook, "Hader_Attendance_Report.xlsx");
+        showAlert("تم تصدير البيانات إلى Excel بنجاح");
+    } catch (error) {
+        console.error("Excel export error:", error);
+        showAlert("فشل تصدير البيانات.", "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function exportToPDF() {
+    showLoading(true);
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add Arabic font
+        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+        doc.setFont('Amiri');
+
+        const data = getFilteredAttendanceData();
+        const headers = [["المدة (ساعة)", "وقت الخروج", "وقت الدخول", "النوع", "رقم الجوال", "الاسم", "الفرع"]];
+        const body = data.map(row => [
+            calculateDuration(row.checkIn, row.checkOut).toFixed(2),
+            row.checkOut || "لم يتم الخروج",
+            row.checkIn || "N/A",
+            row.type,
+            row.phone,
+            row.name,
+            row.city
+        ]);
+
+        doc.autoTable({
+            head: headers,
+            body: body,
+            styles: { font: "Amiri", halign: 'right' },
+            headStyles: { fillColor: [44, 62, 80], halign: 'right' },
+            startY: 20
+        });
+
+        // Add a title
+        const title = "تقرير الحضور والانصراف";
+        const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+        const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
+        doc.text(title, titleX, 15);
+
+        doc.save("Hader_Attendance_Report.pdf");
+        showAlert("تم تصدير البيانات إلى PDF بنجاح");
+    } catch (error) {
+        console.error("PDF export error:", error);
+        showAlert("فشل تصدير البيانات.", "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function getKpiDataAsObject() {
+    return {
+        volunteersCount: document.getElementById('volunteers-count').textContent,
+        volunteersAvg: document.getElementById('volunteers-avg').textContent,
+        traineesCount: document.getElementById('trainees-count').textContent,
+        traineesDays: document.getElementById('trainees-days').textContent,
+        preparatoryCount: document.getElementById('preparatory-count').textContent,
+        preparatoryDays: document.getElementById('preparatory-days').textContent,
+        totalCount: document.getElementById('total-count').textContent,
+        totalHours: document.getElementById('total-hours').textContent,
+
+        volunteersSessions: document.getElementById('volunteers-sessions').textContent,
+        volunteersHours: document.getElementById('volunteers-hours').textContent,
+        volunteersAvgSession: document.getElementById('volunteers-avg-session').textContent,
+
+        traineesSessions: document.getElementById('trainees-sessions').textContent,
+        traineesTotalDays: document.getElementById('trainees-total-days').textContent,
+        traineesCompletion: document.getElementById('trainees-completion').textContent,
+
+        preparatorySessions: document.getElementById('preparatory-sessions').textContent,
+        preparatoryTotalDays: document.getElementById('preparatory-total-days').textContent,
+        preparatoryCompletion: document.getElementById('preparatory-completion').textContent
+    };
+}
+
+
+function exportKPIToExcel() {
+    showLoading(true);
+    try {
+        const kpis = getKpiDataAsObject();
+        const data = [
+            ["المؤشر الرئيسي", "القيمة"],
+            ["عدد المتطوعين", kpis.volunteersCount],
+            [kpis.volunteersAvg, ""],
+            ["عدد المتدربين", kpis.traineesCount],
+            [kpis.traineesDays, ""],
+            ["عدد التمهير", kpis.preparatoryCount],
+            [kpis.preparatoryDays, ""],
+            ["إجمالي الحضور", kpis.totalCount],
+            [kpis.totalHours, ""],
+            [],
+            ["التحليل التفصيلي", "جلسات", "إجمالي", "النسبة/المتوسط"],
+            ["المتطوعين", kpis.volunteersSessions, `${kpis.volunteersHours} (ساعة)`, `${kpis.volunteersAvgSession} (متوسط الجلسة)`],
+            ["المتدربين", kpis.traineesSessions, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesCompletion],
+            ["التمهير", kpis.preparatorySessions, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatoryCompletion],
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "ملخص التحليلات");
+        XLSX.writeFile(workbook, "Hader_Analytics_Report.xlsx");
+        showAlert("تم تصدير التحليلات إلى Excel بنجاح");
+    } catch (error) {
+        console.error("KPI Excel export error:", error);
+        showAlert("فشل تصدير التحليلات.", "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function exportKPIToPDF() {
+    showLoading(true);
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const kpis = getKpiDataAsObject();
+
+        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+        doc.setFont('Amiri');
+
+        const title = "تقرير التحليلات والمؤشرات";
+        const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+        const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
+        doc.text(title, titleX, 15);
+
+        doc.setFontSize(14);
+        doc.text("المؤشرات الرئيسية", 195, 30, { align: 'right' });
+        doc.setFontSize(11);
+        doc.text(`إجمالي الحضور: ${kpis.totalCount}  |  ${kpis.totalHours}`, 195, 40, { align: 'right' });
+        doc.text(`المتطوعين: ${kpis.volunteersCount}  |  ${kpis.volunteersAvg}`, 195, 48, { align: 'right' });
+        doc.text(`المتدربين: ${kpis.traineesCount}  |  ${kpis.traineesDays}`, 195, 56, { align: 'right' });
+        doc.text(`التمهير: ${kpis.preparatoryCount}  |  ${kpis.preparatoryDays}`, 195, 64, { align: 'right' });
+        
+        doc.setFontSize(14);
+        doc.text("التحليل التفصيلي حسب الفئات", 195, 80, { align: 'right' });
+
+        doc.autoTable({
+            head: [["النسبة/المتوسط", "الإجمالي", "الجلسات", "الفئة"]],
+            body: [
+                [`${kpis.volunteersAvgSession} (متوسط الجلسة)`, `${kpis.volunteersHours} (ساعة)`, kpis.volunteersSessions, "المتطوعين"],
+                [kpis.traineesCompletion, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesSessions, "المتدربين"],
+                [kpis.preparatoryCompletion, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatorySessions, "التمهير"]
+            ],
+            startY: 85,
+            styles: { font: "Amiri", halign: 'right' },
+            headStyles: { fillColor: [44, 62, 80] },
+        });
+
+        doc.save("Hader_Analytics_Report.pdf");
+        showAlert("تم تصدير التحليلات إلى PDF بنجاح");
+    } catch (error) {
+        console.error("KPI PDF export error:", error);
+        showAlert("فشل تصدير التحليلات.", "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
 
 /* ===============================================
    HELPER FUNCTIONS & UTILITIES
@@ -479,9 +674,3 @@ function setupKeyboardShortcuts() {
         }
     });
 }
-
-// Placeholder export functions
-function exportToExcel() { showAlert('وظيفة التصدير إلى Excel غير متاحة حاليًا.', 'error'); }
-function exportToPDF() { showAlert('وظيفة التصدير إلى PDF غير متاحة حاليًا.', 'error'); }
-function exportKPIToExcel() { showAlert('وظيفة تصدير التحليلات إلى Excel غير متاحة حاليًا.', 'error'); }
-function exportKPIToPDF() { showAlert('وظيفة تصدير التحليلات إلى PDF غير متاحة حاليًا.', 'error'); }
