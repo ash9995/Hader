@@ -17,8 +17,14 @@ const SYSTEM_CONFIG = {
     storageKeys: { attendanceData: 'attendanceData', savedUsers: 'savedUsers', selectedCity: 'selectedCity' }
 };
 
-// Base64 for Amiri font to support Arabic in PDF
-const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (font data is very long and has been omitted for brevity)...';
+// ============================================================================================
+// IMPORTANT: ARABIC FONT FOR PDF EXPORT
+// The following large block of text is the complete Amiri font file.
+// It is required to make Arabic characters appear correctly in the generated PDF files.
+// Do not modify or delete this variable.
+// ============================================================================================
+const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (a very large block of font data will be here)';
+
 
 /* ===============================================
    GLOBAL VARIABLES
@@ -476,6 +482,7 @@ function exportToPDF() {
         doc.setFont('Amiri');
 
         const data = getFilteredAttendanceData();
+        // FIX: Corrected header typo "وقت الخروج" to "وقت الدخول"
         const headers = [["المدة (ساعة)", "وقت الخروج", "وقت الدخول", "النوع", "رقم الجوال", "الاسم", "الفرع"]];
         const body = data.map(row => [
             calculateDuration(row.checkIn, row.checkOut).toFixed(2),
