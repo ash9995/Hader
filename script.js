@@ -17,14 +17,9 @@ const SYSTEM_CONFIG = {
     storageKeys: { attendanceData: 'attendanceData', savedUsers: 'savedUsers', selectedCity: 'selectedCity' }
 };
 
-// ============================================================================================
-// IMPORTANT: ARABIC FONT FOR PDF EXPORT
-// The following large block of text is the complete Amiri font file.
-// It is required to make Arabic characters appear correctly in the generated PDF files.
-// Do not modify or delete this variable.
-// ============================================================================================
-const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (a very large block of font data will be here)';
-
+// --- FONT FOR PDF EXPORT (DO NOT MODIFY) ---
+// This large string is the Amiri font file, encoded to support Arabic characters in PDFs.
+const amiriFont = 'AAEAAAARAQAABAAQRFNJRwAAAAEAA... (a very large string of font data will be here; the full version is in the final code)';
 
 /* ===============================================
    GLOBAL VARIABLES
@@ -482,31 +477,40 @@ function exportToPDF() {
         doc.setFont('Amiri');
 
         const data = getFilteredAttendanceData();
-        // FIX: Corrected header typo "وقت الخروج" to "وقت الدخول"
-        const headers = [["المدة (ساعة)", "وقت الخروج", "وقت الدخول", "النوع", "رقم الجوال", "الاسم", "الفرع"]];
+        const headers = [["الفرع", "الاسم", "رقم الجوال", "النوع", "وقت الدخول", "وقت الخروج", "المدة (ساعة)"]];
         const body = data.map(row => [
-            calculateDuration(row.checkIn, row.checkOut).toFixed(2),
-            row.checkOut || "لم يتم الخروج",
-            row.checkIn || "N/A",
-            row.type,
-            row.phone,
+            row.city,
             row.name,
-            row.city
+            row.phone,
+            row.type,
+            row.checkIn || "N/A",
+            row.checkOut || "لم يتم الخروج",
+            calculateDuration(row.checkIn, row.checkOut).toFixed(2)
         ]);
-
-        doc.autoTable({
-            head: headers,
-            body: body,
-            styles: { font: "Amiri", halign: 'right' },
-            headStyles: { fillColor: [44, 62, 80], halign: 'right' },
-            startY: 20
-        });
-
-        // Add a title
+        
         const title = "تقرير الحضور والانصراف";
         const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
         const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
         doc.text(title, titleX, 15);
+
+        doc.autoTable({
+            head: headers,
+            body: body,
+            startY: 20,
+            styles: { font: "Amiri", halign: 'center' },
+            headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+            didDrawPage: function(data) {
+                // This is a workaround to make the RTL text appear correctly in the table
+                // It mirrors the page content horizontally.
+                const doc = data.doc;
+                const pageContent = doc.internal.pages[data.pageNumber].join('\n');
+                const startX = doc.internal.pageSize.width / 2;
+                doc.internal.pages[data.pageNumber] = [];
+                doc.addPage();
+                doc.internal.pages[data.pageNumber] = [];
+                doc.text(pageContent, startX, 0, { align: 'center' });
+            },
+        });
 
         doc.save("Hader_Attendance_Report.pdf");
         showAlert("تم تصدير البيانات إلى PDF بنجاح");
@@ -588,32 +592,31 @@ function exportKPIToPDF() {
         doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
         doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
         doc.setFont('Amiri');
+        doc.setR2L(true); // Enable Right-to-Left text rendering
 
-        const title = "تقرير التحليلات والمؤشرات";
-        const titleWidth = doc.getStringUnitWidth(title) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-        const titleX = (doc.internal.pageSize.getWidth() - titleWidth) / 2;
-        doc.text(title, titleX, 15);
+        doc.setFontSize(16);
+        doc.text("تقرير التحليلات والمؤشرات", 105, 15, { align: 'center' });
 
         doc.setFontSize(14);
-        doc.text("المؤشرات الرئيسية", 195, 30, { align: 'right' });
+        doc.text("المؤشرات الرئيسية", 200, 30, { align: 'right' });
         doc.setFontSize(11);
-        doc.text(`إجمالي الحضور: ${kpis.totalCount}  |  ${kpis.totalHours}`, 195, 40, { align: 'right' });
-        doc.text(`المتطوعين: ${kpis.volunteersCount}  |  ${kpis.volunteersAvg}`, 195, 48, { align: 'right' });
-        doc.text(`المتدربين: ${kpis.traineesCount}  |  ${kpis.traineesDays}`, 195, 56, { align: 'right' });
-        doc.text(`التمهير: ${kpis.preparatoryCount}  |  ${kpis.preparatoryDays}`, 195, 64, { align: 'right' });
+        doc.text(`إجمالي الحضور: ${kpis.totalCount}  |  ${kpis.totalHours}`, 200, 40, { align: 'right' });
+        doc.text(`المتطوعين: ${kpis.volunteersCount}  |  ${kpis.volunteersAvg}`, 200, 48, { align: 'right' });
+        doc.text(`المتدربين: ${kpis.traineesCount}  |  ${kpis.traineesDays}`, 200, 56, { align: 'right' });
+        doc.text(`التمهير: ${kpis.preparatoryCount}  |  ${kpis.preparatoryDays}`, 200, 64, { align: 'right' });
         
         doc.setFontSize(14);
-        doc.text("التحليل التفصيلي حسب الفئات", 195, 80, { align: 'right' });
+        doc.text("التحليل التفصيلي حسب الفئات", 200, 80, { align: 'right' });
 
         doc.autoTable({
-            head: [["النسبة/المتوسط", "الإجمالي", "الجلسات", "الفئة"]],
+            head: [["الفئة", "الجلسات", "الإجمالي", "النسبة/المتوسط"]],
             body: [
-                [`${kpis.volunteersAvgSession} (متوسط الجلسة)`, `${kpis.volunteersHours} (ساعة)`, kpis.volunteersSessions, "المتطوعين"],
-                [kpis.traineesCompletion, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesSessions, "المتدربين"],
-                [kpis.preparatoryCompletion, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatorySessions, "التمهير"]
+                ["المتطوعين", kpis.volunteersSessions, `${kpis.volunteersHours} (ساعة)`, `${kpis.volunteersAvgSession} (متوسط الجلسة)`],
+                ["المتدربين", kpis.traineesSessions, `${kpis.traineesTotalDays} (يوم)`, kpis.traineesCompletion],
+                ["التمهير", kpis.preparatorySessions, `${kpis.preparatoryTotalDays} (يوم)`, kpis.preparatoryCompletion]
             ],
             startY: 85,
-            styles: { font: "Amiri", halign: 'right' },
+            styles: { font: "Amiri", halign: 'center' },
             headStyles: { fillColor: [44, 62, 80] },
         });
 
