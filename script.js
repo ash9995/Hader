@@ -5,11 +5,7 @@
 const SYSTEM_CONFIG = {
     cities: [ 'الدمام', 'الرياض', 'جيزان', 'نجران', 'حايل', 'احد رفيده', 'بريدة', 'سكاكا' ],
     adminCredentials: { username: 'admin', password: 'admin123456' },
-    defaultData: [
-        { id: 1, city: "الدمام", name: "محمد أحمد", phone: "0512345678", type: "متطوع", opportunityType: "توزيع مواد غذائية", checkIn: "2025-09-28 08:30:00", checkOut: "2025-09-28 16:45:00" },
-        { id: 2, city: "الرياض", name: "أحمد علي", phone: "0556789123", type: "متدرب", checkIn: "2025-09-27 09:15:00", checkOut: "2025-09-27 17:30:00" },
-        { id: 3, city: "الدمام", name: "فاطمة محمد", phone: "0551234567", type: "تمهير", checkIn: "2025-09-26 08:00:00", checkOut: "2025-09-26 16:00:00" }
-    ],
+   
     storageKeys: { attendanceData: 'attendanceData', savedUsers: 'savedUsers', selectedCity: 'selectedCity' }
 };
 
